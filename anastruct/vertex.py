@@ -54,6 +54,9 @@ class Vertex:
             self.coordinates[0] += math.cos(alpha) * radius
             self.coordinates[1] += math.sin(alpha) * radius
 
+    def distance_to(self, other: Vertex):
+        return (self - other).modulus()
+
     def __add__(self, other):
         if isinstance(other, (tuple, list)):
             other = np.asarray(other)
@@ -102,10 +105,17 @@ class Vertex:
     def __eq__(self, other):
         return self.x == other.x and self.y == other.y
 
+    def __hash__(self):
+        return hash(f"{round(self.x, 6)}, {round(self.y, 6)}")
+
     def __str__(self):
         return "Vertex({}, {})".format(self.x, self.y)
 
 
-def vertex_range(v1, v2, n):
+def vertex_range(v1: Vertex, v2: Vertex, n: int, without_start_and_end: bool = False):
+    """Returns `n` evenly spaced vertices between v1 and v2, without"""
     dv = v2 - v1
-    return [v1 + dv * i / n for i in range(n + 1)]
+    if without_start_and_end:
+        return [v1 + dv * i / n for i in range(1, n)]
+    else:
+        return [v1 + dv * i / n for i in range(n + 1)]

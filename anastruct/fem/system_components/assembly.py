@@ -60,14 +60,15 @@ def apply_perpendicular_q_load(system: "SystemElements"):
         element = system.element_map[element_id]
         q_perpendicular = element.all_q_load
 
-        if q_perpendicular == 0:
-            continue
-        elif (
+        if (
             element.q_direction == "x"
             or element.q_direction == "y"
             or element.dead_load
         ):
             apply_parallel_q_load(system, element)
+
+        elif q_perpendicular == 0:
+            continue
 
         kl = element.constitutive_matrix[1][1] * 1e6
         kr = element.constitutive_matrix[2][2] * 1e6

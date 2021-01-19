@@ -39,7 +39,7 @@ def prep_matrix_forces(system: "SystemElements"):
 
 def apply_moment_load(system: "SystemElements"):
     for node_id, Ty in system.loads_moment.items():
-        set_force_vector(system, [(node_id, 3, Ty * system.load_factor)])
+        set_force_vector(system, [(node_id, 3, Ty)])
 
 
 def apply_point_load(system: "SystemElements"):
@@ -49,8 +49,8 @@ def apply_point_load(system: "SystemElements"):
         set_force_vector(
             system,
             [
-                (node_id, 1, Fx * system.load_factor),
-                (node_id, 2, Fz * system.load_factor),
+                (node_id, 1, Fx),
+                (node_id, 2, Fz),
             ],
         )
 
@@ -58,16 +58,13 @@ def apply_point_load(system: "SystemElements"):
 def apply_perpendicular_q_load(system: "SystemElements"):
     for element_id in system.loads_dead_load:
         element = system.element_map[element_id]
+        if element.q_load is None and element.dead_load == 0:
+            continue
+
         q_perpendicular = element.all_q_load
-
-        if (
-            element.q_direction == "x"
-            or element.q_direction == "y"
-            or element.dead_load
-        ):
+        if not (math.isclose(element.q_load + element.dead_load, q_perpendicular)):
             apply_parallel_q_load(system, element)
-
-        elif q_perpendicular == 0:
+        if q_perpendicular == 0:
             continue
 
         kl = element.constitutive_matrix[1][1] * 1e6

@@ -5,7 +5,7 @@ import numpy as np
 from functools import lru_cache
 import copy
 
-from typing import TYPE_CHECKING, Dict, Optional, List
+from typing import TYPE_CHECKING, Dict, Optional, List, Union, Sequence
 
 if TYPE_CHECKING:
     from anastruct.vertex import Vertex
@@ -71,7 +71,7 @@ class Element:
             6
         )  # acting external forces
         self.element_force_vector: np.ndarray = np.array([])
-        self.q_load: float = 0.0
+        self.q_load: Union[float, Sequence[float]] = 0.0
         self.q_direction: Optional[str] = None
         self.dead_load: float = 0.0
         self.N_1: Optional[float] = None
@@ -87,9 +87,10 @@ class Element:
         self.section_name = section_name  # needed for element annotation
 
     @property
-    def all_q_load(self) -> float:
+    def all_q_load(self) -> Union[float,Sequence[float]]:
+        q_factor = 0
         if self.q_load is None:
-            q = 0
+            q = self.dead_load * cos(self.angle)
         else:
             if self.q_direction == "x":
                 q_factor = -sin(self.angle)
@@ -102,9 +103,11 @@ class Element:
                     "Wrong parameters",
                     "q-loads direction is not set property. Please choose 'x', 'y', or 'element'",
                 )
-            q = self.q_load * q_factor
-
-        return q + self.dead_load * cos(self.angle)
+            if isinstance(self.q_load, float):
+                q = self.q_load * q_factor + self.dead_load * cos(self.angle)
+            else:
+                q=[q_l * q_factor + self.dead_load * cos(self.angle) for q_l in self.q_load]
+        return q
 
     @property
     def node_1(self) -> Node:

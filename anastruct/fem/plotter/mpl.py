@@ -21,7 +21,7 @@ class Plotter(PlottingValues):
         super(Plotter, self).__init__(system, mesh)
         self.system = system
         self.one_fig = None
-        self.max_q = 0
+        self.max_q = 10
         self.max_system_point_load = 0
 
     def __start_plot(self, figsize):
@@ -245,14 +245,24 @@ class Plotter(PlottingValues):
         x1;y1  element    x2;y2
         """
 
+        #TODO: Plot linear loads
+
         for q_id in self.system.loads_q.keys():
             el = self.system.element_map[q_id]
-            if el.q_load > 0:
-                direction = 1
-            else:
-                direction = -1
+            if isinstance(el.q_load,float):
+                if el.q_load > 0:
+                    direction = 1
+                else:
+                    direction = -1
+                h = 0.05 * max_val * abs(el.q_load) / self.max_q
+            elif isinstance(el.q_load,list):
+                if el.q_load[0] > 0:
+                    direction = 1
+                else:
+                    direction = -1
+                h = 0.05 * max_val * max([abs(q_load) for q_load in el.q_load]) / self.max_q
 
-            h = 0.05 * max_val * abs(el.q_load) / self.max_q
+
             x1 = el.vertex_1.x
             y1 = el.vertex_1.y
             x2 = el.vertex_2.x
@@ -294,9 +304,19 @@ class Plotter(PlottingValues):
                     ec="g",
                     fc="g",
                 )
-                self.one_fig.text(
-                    xt, yt, "q=%d" % el.q_load, color="k", fontsize=9, zorder=10
-                )
+                if isinstance(el.q_load, float):
+                    self.one_fig.text(
+                        xt, yt, "q=%d" % el.q_load, color="k", fontsize=9, zorder=10
+                    )
+                elif isinstance(el.q_load, list):
+                    self.one_fig.text(
+                        xt, yt, "q1=%d" % el.q_load[0], color="k", fontsize=9, zorder=10
+                    )
+                    self.one_fig.text(
+                        xt, yt, "q2=%d" % el.q_load[1], color="k", fontsize=9, zorder=10
+                    )
+
+
 
     @staticmethod
     def __arrow_patch_values(Fx, Fz, node, h):
@@ -625,11 +645,7 @@ class Plotter(PlottingValues):
             max_moment = max(
                 map(
                     lambda el: max(
-                        abs(el.node_1.Ty),
-                        abs(
-                            (el.node_1.Ty - el.node_2.Ty) * 0.5
-                            - 1 / 8 * el.all_q_load * el.l ** 2
-                        ),
+                        el.bending_moment,
                     )
                     if el.type == "general"
                     else 0,

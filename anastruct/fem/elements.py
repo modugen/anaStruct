@@ -27,17 +27,18 @@ CACHE_BOUND = 32000
 
 class Element:
     def __init__(
-        self,
-        id_: int,
-        EA: float,
-        EI: float,
-        l: float,
-        angle: float,
-        vertex_1: Vertex,
-        vertex_2: Vertex,
-        type_: str,
-        section_name: str,
-        spring: "Spring" = {},
+            self,
+            id_: int,
+            EA: float,
+            EI: float,
+            l: float,
+            angle: float,
+            vertex_1: Vertex,
+            vertex_2: Vertex,
+            type_: str,
+            section_name: str,
+            spring: "Spring" = {},
+            linear_density: float = 0,
     ):
         """
         :param id_: integer representing the elements ID
@@ -51,11 +52,13 @@ class Element:
                     spring={1: k
                             2: k}
         """
+
         self.id = id_
         self.type = type_
         self.EA = EA
         self.EI = EI
         self.l = l
+        self.linear_density = linear_density
         self.springs = spring
         self.vertex_1 = vertex_1  # location
         self.vertex_2 = vertex_2  # location
@@ -63,6 +66,7 @@ class Element:
         self.kinematic_matrix = kinematic_matrix(angle, angle, l)
         self.constitutive_matrix: np.ndarray
         self.stiffness_matrix: np.ndarray
+        self.mass_matrix: np.ndarray
         self.node_id1: int
         self.node_id2: int
         self.node_map: Dict[int, Node]
@@ -84,10 +88,11 @@ class Element:
         self.nodes_plastic: List[bool] = [False, False]
         self.compile_constitutive_matrix(self.EA, self.EI, l)
         self.compile_stiffness_matrix()
+        self.compile_mass_matrix()
         self.section_name = section_name  # needed for element annotation
 
     @property
-    def all_q_load(self) -> Union[float,Sequence[float]]:
+    def all_q_load(self) -> Union[float, Sequence[float]]:
         q_factor = 0
         if self.q_load is None:
             q = self.dead_load * cos(self.angle)
@@ -106,7 +111,7 @@ class Element:
             if isinstance(self.q_load, float):
                 q = self.q_load * q_factor + self.dead_load * cos(self.angle)
             else:
-                q=[q_l * q_factor + self.dead_load * cos(self.angle) for q_l in self.q_load]
+                q = [q_l * q_factor + self.dead_load * cos(self.angle) for q_l in self.q_load]
         return q
 
     @property
@@ -148,6 +153,9 @@ class Element:
 
     def compile_constitutive_matrix(self, EA: float, EI: float, l: float):
         self.constitutive_matrix = constitutive_matrix(EA, EI, l, self.springs)
+
+    def compile_mass_matrix(self):
+        self.mass_matrix = mass_matrix(self.linear_density, self.l)
 
     def update_stiffness(self, factor: float, node: int):
         if node == 1:
@@ -227,7 +235,7 @@ def kinematic_matrix(a1: float, a2: float, l: float) -> np.ndarray:
 
 
 def constitutive_matrix(
-    EA: float, EI: float, l: float, spring: Optional[Dict[int, float]] = None
+        EA: float, EI: float, l: float, spring: Optional[Dict[int, float]] = None
 ) -> np.ndarray:
     """
     :param EA: (float) Young's modules * Area
@@ -270,12 +278,24 @@ def constitutive_matrix(
 
 
 def stiffness_matrix(
-    var_constitutive_matrix: np.ndarray, var_kinematic_matrix: np.ndarray
+        var_constitutive_matrix: np.ndarray, var_kinematic_matrix: np.ndarray
 ) -> np.ndarray:
     kinematic_transposed_times_constitutive = np.dot(
         var_kinematic_matrix.transpose(), var_constitutive_matrix
     )
     return np.dot(kinematic_transposed_times_constitutive, var_kinematic_matrix)
+
+
+def mass_matrix(linear_density: float, l: float):
+    matrix = ((linear_density * l)/420) * \
+             np.array([[140, 0, 0, 70, 0, 0],
+                       [0, 156, 22*l, 0, 54, -13*l],
+                       [0, 22*l, 4*l**2, 0, 13*l, -3*l**2],
+                       [70, 0, 0, 140, 0, 0],
+                       [0, 54, 13*l, 0, 156, -22*l],
+                       [0, -13*l, -3*l**2, 0, -22*l, 4*l**2]])
+    return matrix
+
 
 
 def geometric_stiffness_matrix(l: float, N: float, a1: float, a2: float) -> np.ndarray:
@@ -292,61 +312,61 @@ def geometric_stiffness_matrix(l: float, N: float, a1: float, a2: float) -> np.n
     s2 = sin(a2)
     # http://people.duke.edu/~hpgavin/cee421/frame-finite-def.pdf
     return (
-        N
-        / l
-        * np.array(
+            N
+            / l
+            * np.array(
+        [
             [
-                [
-                    6 / 5 * s1 ** 2,
-                    -6 / 5 * s1 * c1,
-                    -l / 10 * s1,
-                    -6 / 5 * s2 ** 2,
-                    6 / 5 * s2 * c2,
-                    -l / 10 * s2,
-                ],
-                [
-                    -6 / 5 * s1 * c1,
-                    6 / 5 * c1 ** 2,
-                    l / 10 * c1,
-                    6 / 5 * s2 * c2,
-                    -6 / 5 * c2 ** 2,
-                    l / 10 * c2,
-                ],
-                [
-                    -l / 10 * s1,
-                    l / 10 * c1,
-                    2 * l ** 2 / 15,
-                    l / 10 * s2,
-                    -l / 10 * c2,
-                    -(l ** 2) / 30,
-                ],
-                [
-                    -6 / 5 * s1 ** 2,
-                    6 / 5 * s1 * c1,
-                    l / 10 * s1,
-                    6 / 5 * s2 ** 2,
-                    -6 / 5 * s1 * c2,
-                    l / 10 * s2,
-                ],
-                [
-                    6 / 5 * s1 * c1,
-                    -6 / 5 * c1 ** 2,
-                    -l / 10 * c1,
-                    -6 / 5 * s2 * c2,
-                    6 / 5 * c2 ** 2,
-                    -l / 10 * c2,
-                ],
-                [
-                    -l / 10 * s1,
-                    l / 10 * c1,
-                    -(l ** 2) / 30,
-                    l / 10 * s2,
-                    -l / 10 * c2,
-                    2 * l ** 2 / 15,
-                ],
-            ]
-        )
-        * np.array([1, -1, 1, 1, -1, 1])
+                6 / 5 * s1 ** 2,
+                -6 / 5 * s1 * c1,
+                -l / 10 * s1,
+                -6 / 5 * s2 ** 2,
+                6 / 5 * s2 * c2,
+                -l / 10 * s2,
+            ],
+            [
+                -6 / 5 * s1 * c1,
+                6 / 5 * c1 ** 2,
+                l / 10 * c1,
+                6 / 5 * s2 * c2,
+                -6 / 5 * c2 ** 2,
+                l / 10 * c2,
+            ],
+            [
+                -l / 10 * s1,
+                l / 10 * c1,
+                2 * l ** 2 / 15,
+                l / 10 * s2,
+                -l / 10 * c2,
+                -(l ** 2) / 30,
+            ],
+            [
+                -6 / 5 * s1 ** 2,
+                6 / 5 * s1 * c1,
+                l / 10 * s1,
+                6 / 5 * s2 ** 2,
+                -6 / 5 * s1 * c2,
+                l / 10 * s2,
+            ],
+            [
+                6 / 5 * s1 * c1,
+                -6 / 5 * c1 ** 2,
+                -l / 10 * c1,
+                -6 / 5 * s2 * c2,
+                6 / 5 * c2 ** 2,
+                -l / 10 * c2,
+            ],
+            [
+                -l / 10 * s1,
+                l / 10 * c1,
+                -(l ** 2) / 30,
+                l / 10 * s2,
+                -l / 10 * c2,
+                2 * l ** 2 / 15,
+            ],
+        ]
+    )
+            * np.array([1, -1, 1, 1, -1, 1])
     )  # conversion from coordinate system
 
 

@@ -108,9 +108,9 @@ class Element:
                     "Wrong parameters",
                     "q-loads direction is not set property. Please choose 'x', 'y', or 'element'",
                 )
-            if isinstance(self.q_load, float):
+            if isinstance(self.q_load, (float,int)):
                 q = self.q_load * q_factor + self.dead_load * cos(self.angle)
-            else:
+            elif isinstance(self.q_load, list):
                 q = [q_l * q_factor + self.dead_load * cos(self.angle) for q_l in self.q_load]
         return q
 

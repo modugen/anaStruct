@@ -17,6 +17,7 @@ def test_example():
         float,
         sep=" ",
     )
+    system.solve
     assert np.allclose(system.solve(), sol)
 
 
@@ -31,3 +32,7 @@ def test_parallel_q_load():
 
     assert system.element_map[1].N_1 == -10
     assert system.element_map[1].N_2 == 0
+
+
+
+

@@ -174,7 +174,12 @@ class ElementLevel:
         m_val = element.node_1.Ty + iteration_factor * dT
         if element.all_q_load:
             q = element.all_q_load
-            q_part = -0.5 * -q * x ** 2 + 0.5 * -q * element.l * x
+            if isinstance(q,float):
+                q_part = -0.5 * -q * x ** 2 + 0.5 * -q * element.l * x
+            elif isinstance(q,list):
+                q_part = 0.5 * -q[0] * x * (element.l - x)
+                q_lin = ((q[1]-q[0])/6) * (((x**3)/element.l)-x*element.l)
+                q_part += q_lin
             m_val += q_part
 
         element.bending_moment = m_val

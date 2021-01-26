@@ -48,12 +48,12 @@ class SystemElements:
     """
 
     def __init__(
-        self,
-        figsize: Tuple[float, float] = (12, 8),
-        EA: float = 15e3,
-        EI: float = 5e3,
-        load_factor: float = 1.0,
-        mesh: int = 50,
+            self,
+            figsize: Tuple[float, float] = (12, 8),
+            EA: float = 15e3,
+            EI: float = 5e3,
+            load_factor: float = 1.0,
+            mesh: int = 50,
     ):
         """
         * E = Young's modulus
@@ -112,7 +112,7 @@ class SystemElements:
         self.loads_point: Dict[
             int, Tuple[float, float]
         ] = {}  # node ids with a point loads {node_id: (x, y)}
-        self.loads_q: Dict[int, float] = {}  # element ids with a q-load
+        self.loads_q: Dict[int, Union[float, Sequence[float]]] = {}  # element ids with a q-load
         self.loads_moment: Dict[int, float] = {}
         self.loads_dead_load: Set[
             int
@@ -153,15 +153,15 @@ class SystemElements:
         return max(self.node_map.keys())
 
     def add_element_grid(
-        self,
-        x: Union[List[float], np.ndarray],
-        y: Union[List[float], np.ndarray],
-        EA: Optional[Union[List[float], np.ndarray]] = None,
-        EI: Optional[Union[List[float], np.ndarray]] = None,
-        g: Optional[Union[List[float], np.ndarray]] = None,
-        mp: MpType = {},
-        spring: Spring = {},
-        **kwargs
+            self,
+            x: Union[List[float], np.ndarray],
+            y: Union[List[float], np.ndarray],
+            EA: Optional[Union[List[float], np.ndarray]] = None,
+            EI: Optional[Union[List[float], np.ndarray]] = None,
+            g: Optional[Union[List[float], np.ndarray]] = None,
+            mp: MpType = {},
+            spring: Spring = {},
+            **kwargs
     ):
         """
         Add multiple elements defined by two containers with coordinates.
@@ -200,10 +200,10 @@ class SystemElements:
             )
 
     def add_truss_element(
-        self,
-        location: Union[Sequence[Sequence[float]], Sequence[Vertex]],
-        EA: float = None,
-        **kwargs
+            self,
+            location: Union[Sequence[Sequence[float]], Sequence[Vertex]],
+            EA: float = None,
+            **kwargs
     ) -> int:
         """
         .. highlight:: python
@@ -227,14 +227,14 @@ class SystemElements:
         return self.add_element(location, EA, element_type="truss", **kwargs)
 
     def add_element(
-        self,
-        location: Union[Sequence[Sequence[float]], Sequence[Vertex]],
-        EA: float = None,
-        EI: float = None,
-        g: float = 0,
-        mp: MpType = {},
-        spring: Spring = {},
-        **kwargs
+            self,
+            location: Union[Sequence[Sequence[float]], Sequence[Vertex]],
+            EA: float = None,
+            EI: float = None,
+            g: float = 0,
+            mp: MpType = {},
+            spring: Spring = {},
+            **kwargs
     ) -> int:
         """
         :param location: The two nodes of the element or the next node of the element.
@@ -366,16 +366,16 @@ class SystemElements:
         return self.count
 
     def add_multiple_elements(
-        self,
-        location: Union[Sequence[Sequence[float]], Sequence[Vertex]],
-        n: Optional[int] = None,
-        dl: Optional[float] = None,
-        EA: float = None,
-        EI: float = None,
-        g: float = 0,
-        mp: MpType = {},
-        spring: Spring = {},
-        **kwargs
+            self,
+            location: Union[Sequence[Sequence[float]], Sequence[Vertex]],
+            n: Optional[int] = None,
+            dl: Optional[float] = None,
+            EA: float = None,
+            EI: float = None,
+            g: float = 0,
+            mp: MpType = {},
+            spring: Spring = {},
+            **kwargs
     ):
         """
         Add multiple elements defined by the first and the last point.
@@ -485,10 +485,10 @@ class SystemElements:
         return elements
 
     def insert_node(
-        self,
-        element_id: int,
-        location: Union[Sequence[float], Vertex, None] = None,
-        factor=None,
+            self,
+            element_id: int,
+            location: Union[Sequence[float], Vertex, None] = None,
+            factor=None,
     ):
         """
         Insert a node into an existing structure.
@@ -572,12 +572,12 @@ class SystemElements:
         self.__dict__ = ss.__dict__.copy()
 
     def solve(
-        self,
-        force_linear: bool = False,
-        verbosity: int = 0,
-        max_iter: int = 200,
-        geometrical_non_linear: int = False,
-        **kwargs
+            self,
+            force_linear: bool = False,
+            verbosity: int = 0,
+            max_iter: int = 200,
+            geometrical_non_linear: int = False,
+            **kwargs
     ):
 
         """
@@ -607,7 +607,7 @@ class SystemElements:
         if not naked:
             if not self.validate():
                 if all(
-                    ["general" in element.type for element in self.element_map.values()]
+                        ["general" in element.type for element in self.element_map.values()]
                 ):
                     raise FEMException(
                         "StabilityError",
@@ -621,7 +621,7 @@ class SystemElements:
             el.reset()
         system_components.assembly.prep_matrix_forces(self)
         assert (
-            self.system_force_vector is not None
+                self.system_force_vector is not None
         ), "There are no forces on the structure"
 
         if self.non_linear and not force_linear:
@@ -663,12 +663,12 @@ class SystemElements:
 
             # node 1 ux, uz, phi
             el.element_displacement_vector[:3] = self.system_displacement_vector[
-                index_node_1 : index_node_1 + 3
-            ]
+                                                 index_node_1: index_node_1 + 3
+                                                 ]
             # node 2 ux, uz, phi
             el.element_displacement_vector[3:] = self.system_displacement_vector[
-                index_node_2 : index_node_2 + 3
-            ]
+                                                 index_node_2: index_node_2 + 3
+                                                 ]
             el.determine_force_vector()
 
         if not naked:
@@ -698,7 +698,7 @@ class SystemElements:
         ss = copy.copy(self)
         system_components.assembly.prep_matrix_forces(ss)
         assert (
-            np.abs(ss.system_force_vector).sum() != 0
+                np.abs(ss.system_force_vector).sum() != 0
         ), "There are no forces on the structure"
         ss._remainder_indexes = []
         system_components.assembly.assemble_system_matrix(ss)
@@ -739,11 +739,11 @@ class SystemElements:
             self.supports_rotational.append(self.node_map[id_])
 
     def add_support_roll(
-        self,
-        node_id: Union[Sequence[int], int],
-        direction: Union[Sequence[Union[str, int]], Union[str, int]] = "x",
-        angle: Union[Sequence[Optional[float]], Optional[float]] = None,
-        rotate: Union[Sequence[Optional[bool]], Optional[bool]] = True,
+            self,
+            node_id: Union[Sequence[int], int],
+            direction: Union[Sequence[Union[str, int]], Union[str, int]] = "x",
+            angle: Union[Sequence[Optional[float]], Optional[float]] = None,
+            rotate: Union[Sequence[Optional[bool]], Optional[bool]] = True,
     ):
         """
         Adds a rolling support at a given node.
@@ -785,8 +785,8 @@ class SystemElements:
             self.supports_roll_rotate.append(rotate_)
 
     def add_support_fixed(
-        self,
-        node_id: Union[Sequence[int], int],
+            self,
+            node_id: Union[Sequence[int], int],
     ):
         """
         Add a fixed support at a given node.
@@ -806,11 +806,11 @@ class SystemElements:
             self.supports_fixed.append(self.node_map[id_])
 
     def add_support_spring(
-        self,
-        node_id: Union[Sequence[int], int],
-        translation: Union[Sequence[int], int],
-        k: Union[Sequence[float], float],
-        roll: Union[Sequence[bool], bool] = False,
+            self,
+            node_id: Union[Sequence[int], int],
+            translation: Union[Sequence[int], int],
+            k: Union[Sequence[float], float],
+            roll: Union[Sequence[bool], bool] = False,
     ):
         """
         Add a translational support at a given node.
@@ -837,6 +837,7 @@ class SystemElements:
             translation = (translation,)
         if not isinstance(k, collections.Iterable):
             k = (k,)
+
         if not isinstance(roll, collections.Iterable):
             roll = (roll,)
 
@@ -861,10 +862,11 @@ class SystemElements:
                 self.supports_spring_y.append((self.node_map[id_], roll_))
 
     def q_load(
-        self,
-        q: Union[float, Sequence[float]],
-        element_id: Union[int, Sequence[int]],
-        direction: Union[str, Sequence[str]] = "element",
+            self,
+            q: Union[float, Sequence[float]],
+            element_id: Union[int, Sequence[int]],
+            direction: Union[str, Sequence[str]] = "element",
+            q2: Union[float, Sequence[float]] = None
     ):
         """
         Apply a q-load to an element.
@@ -873,27 +875,50 @@ class SystemElements:
         :param q: value of the q-load
         :param direction: "element", "x", "y"
         """
+
         q, element_id, direction = args_to_lists(q, element_id, direction)
         q = cast(Sequence[float], q)
         element_id = cast(Sequence[int], element_id)
         direction = cast(Sequence[str], direction)
+        if q2 is not None:
+            q2 = args_to_lists(q2)
+            q2 = cast(Sequence[float], q2)
+            q2=q2[0]
+            assert len(q) == len(q2)
 
         assert len(q) == len(element_id) == len(direction)
 
-        for i in range(len(element_id)):
-            id_ = _negative_index_to_id(element_id[i], self.element_map.keys())
-            self.plotter.max_q = max(self.plotter.max_q, abs(q[i]))
-            self.loads_q[id_] = q[i] * self.orientation_cs * self.load_factor
-            el = self.element_map[id_]
-            el.q_load = q[i] * self.orientation_cs * self.load_factor
-            el.q_direction = direction[i]
+        # Constant q-load
+        if q2 is None:
+            for i in range(len(element_id)):
+                id_ = _negative_index_to_id(element_id[i], self.element_map.keys())
+                self.plotter.max_q = max(self.plotter.max_q, abs(q[i]))
+                self.loads_q[id_] = q[i] * self.orientation_cs * self.load_factor
+                el = self.element_map[id_]
+                el.q_load = q[i] * self.orientation_cs * self.load_factor
+                el.q_direction = direction[i]
+
+        # Linear q-load
+        else:
+            assert len(q) == len(q2)
+            for i in range(len(element_id)):
+                id_ = _negative_index_to_id(element_id[i], self.element_map.keys())
+                self.plotter.max_q = max(self.plotter.max_q, max(abs(q[i]), abs(q2[i])))
+                el = self.element_map[id_]
+                q_load_1 = q[i] * self.orientation_cs * self.load_factor
+                q_load_2 = q2[i] * self.orientation_cs * self.load_factor
+                self.loads_q[id_] = [q_load_1,
+                                     q_load_2]
+                el.q_load = [q_load_1,
+                             q_load_2]
+                el.q_direction = direction[i]
 
     def point_load(
-        self,
-        node_id: Union[int, Sequence[int]],
-        Fx: Union[float, Sequence[float]] = 0.0,
-        Fy: Union[float, Sequence[float]] = 0.0,
-        rotation: Union[float, Sequence[float]] = 0,
+            self,
+            node_id: Union[int, Sequence[int]],
+            Fx: Union[float, Sequence[float]] = 0.0,
+            Fy: Union[float, Sequence[float]] = 0.0,
+            rotation: Union[float, Sequence[float]] = 0,
     ):
         """
         Apply a point load to a node.
@@ -924,7 +949,7 @@ class SystemElements:
             )
 
     def moment_load(
-        self, node_id: Union[int, Sequence[int]], Ty: Union[float, Sequence[float]]
+            self, node_id: Union[int, Sequence[int]], Ty: Union[float, Sequence[float]]
     ):
         """
         Apply a moment on a node.
@@ -943,15 +968,15 @@ class SystemElements:
             self.loads_moment[id_] = Ty[i] * self.load_factor
 
     def show_structure(
-        self,
-        verbosity: int = 0,
-        scale: float = 1.0,
-        offset: Tuple[float, float] = (0, 0),
-        figsize: Optional[Tuple[float, float]] = None,
-        show: bool = True,
-        supports: bool = True,
-        values_only: bool = False,
-        annotations: bool = False,
+            self,
+            verbosity: int = 0,
+            scale: float = 1.0,
+            offset: Tuple[float, float] = (0, 0),
+            figsize: Optional[Tuple[float, float]] = None,
+            show: bool = True,
+            supports: bool = True,
+            values_only: bool = False,
+            annotations: bool = False,
     ):
         """
         Plot the structure.
@@ -974,14 +999,14 @@ class SystemElements:
         )
 
     def show_bending_moment(
-        self,
-        factor: Optional[float] = None,
-        verbosity: int = 0,
-        scale: float = 1,
-        offset: Tuple[float, float] = (0, 0),
-        figsize: Tuple[float, float] = None,
-        show: bool = True,
-        values_only: bool = False,
+            self,
+            factor: Optional[float] = None,
+            verbosity: int = 0,
+            scale: float = 1,
+            offset: Tuple[float, float] = (0, 0),
+            figsize: Tuple[float, float] = None,
+            show: bool = True,
+            values_only: bool = False,
     ):
         """
         Plot the bending moment.
@@ -1002,14 +1027,14 @@ class SystemElements:
         )
 
     def show_axial_force(
-        self,
-        factor: Optional[float] = None,
-        verbosity: int = 0,
-        scale: float = 1,
-        offset: Tuple[float, float] = (0, 0),
-        figsize: Optional[Tuple[float, float]] = None,
-        show: bool = True,
-        values_only: bool = False,
+            self,
+            factor: Optional[float] = None,
+            verbosity: int = 0,
+            scale: float = 1,
+            offset: Tuple[float, float] = (0, 0),
+            figsize: Optional[Tuple[float, float]] = None,
+            show: bool = True,
+            values_only: bool = False,
     ):
         """
         Plot the axial force.
@@ -1028,14 +1053,14 @@ class SystemElements:
         return self.plotter.axial_force(factor, figsize, verbosity, scale, offset, show)
 
     def show_shear_force(
-        self,
-        factor: Optional[float] = None,
-        verbosity: int = 0,
-        scale: float = 1,
-        offset: Tuple[float, float] = (0, 0),
-        figsize: Optional[Tuple[float, float]] = None,
-        show: bool = True,
-        values_only: bool = False,
+            self,
+            factor: Optional[float] = None,
+            verbosity: int = 0,
+            scale: float = 1,
+            offset: Tuple[float, float] = (0, 0),
+            figsize: Optional[Tuple[float, float]] = None,
+            show: bool = True,
+            values_only: bool = False,
     ):
         """
         Plot the shear force.
@@ -1054,12 +1079,12 @@ class SystemElements:
         return self.plotter.shear_force(factor, figsize, verbosity, scale, offset, show)
 
     def show_reaction_force(
-        self,
-        verbosity: int = 0,
-        scale: float = 1,
-        offset: Tuple[float, float] = (0, 0),
-        figsize: Optional[Tuple[float, float]] = None,
-        show: bool = True,
+            self,
+            verbosity: int = 0,
+            scale: float = 1,
+            offset: Tuple[float, float] = (0, 0),
+            figsize: Optional[Tuple[float, float]] = None,
+            show: bool = True,
     ):
         """
         Plot the reaction force.
@@ -1074,15 +1099,15 @@ class SystemElements:
         return self.plotter.reaction_force(figsize, verbosity, scale, offset, show)
 
     def show_displacement(
-        self,
-        factor: Optional[float] = None,
-        verbosity: int = 0,
-        scale: float = 1,
-        offset: Tuple[float, float] = (0, 0),
-        figsize: Optional[Tuple[float, float]] = None,
-        show: bool = True,
-        linear: bool = False,
-        values_only: bool = False,
+            self,
+            factor: Optional[float] = None,
+            verbosity: int = 0,
+            scale: float = 1,
+            offset: Tuple[float, float] = (0, 0),
+            figsize: Optional[Tuple[float, float]] = None,
+            show: bool = True,
+            linear: bool = False,
+            values_only: bool = False,
     ):
         """
         Plot the displacement.
@@ -1104,12 +1129,12 @@ class SystemElements:
         )
 
     def show_results(
-        self,
-        verbosity: int = 0,
-        scale: float = 1,
-        offset: Tuple[float, float] = (0, 0),
-        figsize: Optional[Tuple[float, float]] = None,
-        show: bool = True,
+            self,
+            verbosity: int = 0,
+            scale: float = 1,
+            offset: Tuple[float, float] = (0, 0),
+            figsize: Optional[Tuple[float, float]] = None,
+            show: bool = True,
     ):
         """
         Plot all the results in one window.
@@ -1124,7 +1149,7 @@ class SystemElements:
         return self.plotter.results_plot(figsize, verbosity, scale, offset, show)
 
     def get_node_results_system(
-        self, node_id: int = 0
+            self, node_id: int = 0
     ) -> Union[
         List[Tuple[Any, Any, Any, Any, Any, Any, Any]], Dict[str, Union[int, float]]
     ]:
@@ -1166,7 +1191,7 @@ class SystemElements:
         return result_list
 
     def get_node_displacements(
-        self, node_id: int = 0
+            self, node_id: int = 0
     ) -> Union[List[Tuple[Any, Any, Any, Any]], Dict[str, Any]]:
         """
         :param node_id: Represents the node's ID. If integer = 0, the results of all nodes are returned.
@@ -1196,7 +1221,7 @@ class SystemElements:
         return result_list
 
     def get_element_results(
-        self, element_id: int = 0, verbose: bool = False
+            self, element_id: int = 0, verbose: bool = False
     ) -> Union[List[Dict[str, Any]], Dict[str, Any]]:
         """
         :param element_id: representing the elements ID. If elementID = 0 the results of all elements are returned.
@@ -1345,7 +1370,7 @@ class SystemElements:
             return next(
                 filter(
                     lambda x: math.isclose(x.vertex.x, vertex.x, abs_tol=tol)  # type: ignore
-                    and math.isclose(x.vertex.y, vertex.y, abs_tol=tol),  # type: ignore
+                              and math.isclose(x.vertex.y, vertex.y, abs_tol=tol),  # type: ignore
                     self.node_map.values(),
                 )
             ).id
@@ -1353,7 +1378,7 @@ class SystemElements:
             return None
 
     def nodes_range(
-        self, dimension: str
+            self, dimension: str
     ) -> List[Union[float, Tuple[float, float], None]]:
         """
         Retrieve a list with coordinates x or z (y).
@@ -1376,7 +1401,7 @@ class SystemElements:
         )
 
     def nearest_node(
-        self, dimension: str, val: Union[float, Sequence[float]]
+            self, dimension: str, val: Union[float, Sequence[float]]
     ) -> Union[int, None]:
         """
         Retrieve the nearest node ID.
@@ -1435,7 +1460,7 @@ class SystemElements:
 
         # supports
         for node, direction, rotate in zip(
-            self.supports_roll, self.supports_roll_direction, self.supports_roll_rotate
+                self.supports_roll, self.supports_roll_direction, self.supports_roll_rotate
         ):
             ss.add_support_roll((node.id - 1) * n + 1, direction, None, rotate)
         for node in self.supports_fixed:

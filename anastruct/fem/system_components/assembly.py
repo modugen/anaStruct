@@ -66,7 +66,7 @@ def apply_perpendicular_q_load(system: "SystemElements"):
 
         q_perpendicular = element.all_q_load
         parallel_load = False
-        if isinstance(q_perpendicular, float):
+        if isinstance(q_perpendicular, (float,int)):
             if not (math.isclose(element.q_load + element.dead_load, q_perpendicular)):
                 parallel_load = True
         elif isinstance(q_perpendicular, list):
@@ -82,7 +82,7 @@ def apply_perpendicular_q_load(system: "SystemElements"):
         kl = element.constitutive_matrix[1][1] * 1e6
         kr = element.constitutive_matrix[2][2] * 1e6
 
-        if isinstance(q_perpendicular, float):
+        if isinstance(q_perpendicular, (float,int)):
             if math.isclose(kl, kr):
                 left_moment = det_moment(kl, kr, q_perpendicular, 0, element.EI, element.l)
                 right_moment = -left_moment
@@ -167,7 +167,7 @@ def apply_parallel_q_load(system: "SystemElements", element: "Element"):
     if direction == "x":
         factor = abs(math.cos(element.angle))
 
-        if isinstance(element.q_load, float):
+        if isinstance(element.q_load, (float,int)):
 
             for q_element in (element.q_load * factor, element.dead_load * factor_dl):
                 # q_load working at parallel to the elements x-axis          # set the proper direction
@@ -219,7 +219,7 @@ def apply_parallel_q_load(system: "SystemElements", element: "Element"):
             # horizontal element cannot have parallel forces due to self weight or q-load in y direction.
             return None
         factor = abs(math.sin(element.angle))
-        if isinstance(element.q_load, float):
+        if isinstance(element.q_load, (float,int)):
 
             for q_element in (element.q_load * factor, element.dead_load * factor_dl):
                 # q_load working at parallel to the elements x-axis          # set the proper direction
@@ -270,89 +270,6 @@ def apply_parallel_q_load(system: "SystemElements", element: "Element"):
             update_linear(Fxl, Fzl, Fxr, Fzr)
 
 
-def apply_perpendicular_linear_q_load(system: "SystemElements"):
-    for element_id in system.loads_dead_load:
-        element = system.element_map[element_id]
-        if element.q_load is None and element.dead_load == 0:
-            continue
-
-        q_perpendicular = element.all_q_load
-        if not (math.isclose(element.q_load + element.dead_load, q_perpendicular)):
-            apply_parallel_q_load(system, element)
-        if q_perpendicular == 0:
-            continue
-
-            # minus because of systems positive rotation
-            left_moment = det_moment(kl, kr, q_perpendicular, 0, element.EI, element.l)
-            right_moment = -det_moment(
-                kl, kr, q_perpendicular, element.l, element.EI, element.l
-            )
-            rleft = det_shear(kl, kr, q_perpendicular, 0, element.EI, element.l)
-            rright = -det_shear(
-                kl, kr, q_perpendicular, element.l, element.EI, element.l
-            )
-
-        rleft_x = rleft * math.sin(element.a1)
-        rright_x = rright * math.sin(element.a2)
-
-        rleft_z = rleft * math.cos(element.a1)
-        rright_z = rright * math.cos(element.a2)
-
-        if element.type == "truss":
-            left_moment = 0
-            right_moment = 0
-
-        primary_force = np.array(
-            [rleft_x, rleft_z, left_moment, rright_x, rright_z, right_moment]
-        )
-        element.element_primary_force_vector -= primary_force
-
-        # Set force vector
-        assert system.system_force_vector is not None
-        system.system_force_vector[
-        (element.node_id1 - 1) * 3: (element.node_id1 - 1) * 3 + 3
-        ] += primary_force[0:3]
-        system.system_force_vector[
-        (element.node_id2 - 1) * 3: (element.node_id2 - 1) * 3 + 3
-        ] += primary_force[3:]
-
-
-def apply_parallel_linear_q_load(system: "SystemElements", element: "Element"):
-    direction = element.q_direction
-    # dead load
-    factor_dl = abs(math.sin(element.angle))
-
-    def update(Fx: float, Fz: float):
-        element.element_primary_force_vector[0] -= Fx
-        element.element_primary_force_vector[1] -= Fz
-        element.element_primary_force_vector[3] -= Fx
-        element.element_primary_force_vector[4] -= Fz
-
-        set_force_vector(
-            system,
-            [
-                (element.node_1.id, 2, Fz),
-                (element.node_2.id, 2, Fz),
-                (element.node_1.id, 1, Fx),
-                (element.node_2.id, 1, Fx),
-            ],
-        )
-
-    if direction == "x":
-        factor = abs(math.cos(element.angle))
-
-        for q_element in (element.q_load * factor, element.dead_load * factor_dl):
-            # q_load working at parallel to the elements x-axis          # set the proper direction
-            Fx = -q_element * math.cos(element.angle) * element.l * 0.5
-            Fz = (
-                    q_element
-                    * abs(math.sin(element.angle))
-                    * element.l
-                    * 0.5
-                    * np.sign(math.sin(element.angle))
-            )
-
-            update(Fx, Fz)
 
 
 def dead_load(system: "SystemElements", g: float, element_id: int):

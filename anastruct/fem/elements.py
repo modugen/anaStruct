@@ -76,6 +76,7 @@ class Element:
         )  # acting external forces
         self.element_force_vector: np.ndarray = np.array([])
         self.q_load: Union[float, Sequence[float]] = 0.0
+        self.m_load: Union[float, Sequence[float]] = 0.0
         self.q_direction: Optional[str] = None
         self.dead_load: float = 0.0
         self.N_1: Optional[float] = None

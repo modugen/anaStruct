@@ -110,6 +110,7 @@ class SystemElements:
         self.supports_spring_args: List[tuple] = []
 
         # keep track of the loads
+        self.loads_linear_moment : Dict[int, float] = {}
         self.loads_point: Dict[
             int, Tuple[float, float]
         ] = {}  # node ids with a point loads {node_id: (x, y)}
@@ -932,6 +933,8 @@ class SystemElements:
         element_id = cast(Sequence[int], element_id)
         direction = cast(Sequence[str], direction)
         if q2 is not None:
+            if direction == "rz":
+                raise NotImplementedError()
             q2 = args_to_lists(q2)
             q2 = cast(Sequence[float], q2)
             q2 = q2[0]
@@ -998,6 +1001,20 @@ class SystemElements:
                 (Fx[i] * cos + Fy[i] * sin) * self.load_factor,
                 (Fy[i] * self.orientation_cs * cos + Fx[i] * sin) * self.load_factor,
             )
+
+    def q_moment(self, element_id, m):
+        element_id, m = args_to_lists(element_id,m)
+        m = cast(Sequence[float], m)
+        element_id = cast(Sequence[int], element_id)
+
+        assert len(m) == len(element_id)
+
+        for i in range(len(element_id)):
+            id_ = _negative_index_to_id(element_id[i], self.element_map.keys())
+            self.plotter.max_q = max(self.plotter.max_q, abs(m[i]))
+            self.loads_linear_moment[id_] = m[i] * self.load_factor
+            el = self.element_map[id_]
+            el.m_load = m[i] * self.load_factor
 
     def moment_load(
             self, node_id: Union[int, Sequence[int]], Ty: Union[float, Sequence[float]]
@@ -1584,6 +1601,7 @@ class SystemElements:
         system.plot_values = plotter.PlottingValues
 
         return system
+
 
 
 def _negative_index_to_id(idx: int, collection: Collection[int]) -> int:

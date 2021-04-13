@@ -19,6 +19,6 @@ def test_solve_modal_analysis():
         # See Rao, Singiresu S. - Vibration of continuous Systems - John Wiley & Sons (2019) - Section 11.5.1
         return (n ** 2) * (np.pi ** 2) * np.sqrt(EI / (linear_density * l ** 4))
 
-    # retrieve fist four eigenvalues, as error increases for higher eigenvalues
+    # retrieve fist four eigenvalues, as error incr6eases for higher eigenvalues
     for i in range(4):
         assert np.isclose(natural_frequencies[i], analytical_natural_frequencies(10, 10, 800, i + 1), rtol=1e-2)

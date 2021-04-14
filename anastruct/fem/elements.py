@@ -31,6 +31,7 @@ class Element:
             id_: int,
             EA: float,
             EI: float,
+            GA: float,
             l: float,
             angle: float,
             vertex_1: Vertex,
@@ -57,6 +58,7 @@ class Element:
         self.type = type_
         self.EA = EA
         self.EI = EI
+        self.GA = GA
         self.l = l
         self.linear_density = linear_density
         self.springs = spring
@@ -87,7 +89,7 @@ class Element:
         self.extension: Optional[np.ndarray] = None
         self.max_deflection = None
         self.nodes_plastic: List[bool] = [False, False]
-        self.compile_constitutive_matrix(self.EA, self.EI, l)
+        self.compile_constitutive_matrix(self.EA, self.EI, self.GA, l)
         self.compile_stiffness_matrix()
         self.compile_mass_matrix()
         self.section_name = section_name  # needed for element annotation
@@ -109,7 +111,7 @@ class Element:
                     "Wrong parameters",
                     "q-loads direction is not set property. Please choose 'x', 'y', or 'element'",
                 )
-            if isinstance(self.q_load, (float,int)):
+            if isinstance(self.q_load, (float, int)):
                 q = self.q_load * q_factor + self.dead_load * cos(self.angle)
             elif isinstance(self.q_load, list):
                 q = [q_l * q_factor + self.dead_load * cos(self.angle) for q_l in self.q_load]
@@ -145,15 +147,28 @@ class Element:
         return self.element_force_vector
 
     def compile_stiffness_matrix(self):
-        self.stiffness_matrix = stiffness_matrix(
-            self.constitutive_matrix, self.kinematic_matrix
-        )
+        if self.GA is None:
+            self.stiffness_matrix = stiffness_matrix(
+                self.constitutive_matrix, self.kinematic_matrix
+            )
+        else:
+            phi = (12 * self.EI) / (self.GA * (self.l ** 2))
+            beta = 1 / (1 + phi)
+            matrix = stiffness_matrix(
+                self.constitutive_matrix, self.kinematic_matrix)
+            matrix[2][2] += phi*self.EI/self.l
+            matrix[5][5] += phi*self.EI/self.l
+            matrix[2][5] -= phi*self.EI/self.l
+            matrix[5][2] -= phi*self.EI/self.l
+            matrix = beta*matrix
+            self.stiffness_matrix = matrix
 
     def compile_kinematic_matrix(self, a1: float, a2: float, l: float):
+
         self.kinematic_matrix = kinematic_matrix(a1, a2, l)
 
-    def compile_constitutive_matrix(self, EA: float, EI: float, l: float):
-        self.constitutive_matrix = constitutive_matrix(EA, EI, l, self.springs)
+    def compile_constitutive_matrix(self, EA: float, EI: float, GA: float, l: float):
+        self.constitutive_matrix = constitutive_matrix(EA, EI, l, GA, self.springs)
 
     def compile_mass_matrix(self):
         self.mass_matrix = mass_matrix(self.linear_density, self.l)
@@ -236,7 +251,7 @@ def kinematic_matrix(a1: float, a2: float, l: float) -> np.ndarray:
 
 
 def constitutive_matrix(
-        EA: float, EI: float, l: float, spring: Optional[Dict[int, float]] = None
+        EA: float, EI: float, l: float, GA: float = None, spring: Optional[Dict[int, float]] = None
 ) -> np.ndarray:
     """
     :param EA: (float) Young's modules * Area
@@ -245,9 +260,16 @@ def constitutive_matrix(
     :param spring: (int) 1 or 2. Apply a hinge on the first of the second node.
     :return: (array)
     """
-    matrix = np.array(
-        [[EA / l, 0, 0], [0, 4 * EI / l, -2 * EI / l], [0, -2 * EI / l, 4 * EI / l]]
-    )
+    if GA is None:
+        matrix = np.array(
+            [[EA / l, 0, 0], [0, 4 * EI / l, -2 * EI / l], [0, -2 * EI / l, 4 * EI / l]]
+        )
+    else:
+        phi = (12 * EI) / (GA * (l ** 2))
+        beta = 1 / (1 + phi)
+        matrix = np.array(
+            [[EA / (beta * l), 0, 0], [0, 4 * EI / l, -2 * EI / l], [0, -2 * EI / l, 4 * EI / l]]
+        )
 
     if spring is not None:
         """
@@ -288,15 +310,14 @@ def stiffness_matrix(
 
 
 def mass_matrix(linear_density: float, l: float):
-    matrix = ((linear_density * l)/420) * \
+    matrix = ((linear_density * l) / 420) * \
              np.array([[140, 0, 0, 70, 0, 0],
-                       [0, 156, 22*l, 0, 54, -13*l],
-                       [0, 22*l, 4*l**2, 0, 13*l, -3*l**2],
+                       [0, 156, 22 * l, 0, 54, -13 * l],
+                       [0, 22 * l, 4 * l ** 2, 0, 13 * l, -3 * l ** 2],
                        [70, 0, 0, 140, 0, 0],
-                       [0, 54, 13*l, 0, 156, -22*l],
-                       [0, -13*l, -3*l**2, 0, -22*l, 4*l**2]])
+                       [0, 54, 13 * l, 0, 156, -22 * l],
+                       [0, -13 * l, -3 * l ** 2, 0, -22 * l, 4 * l ** 2]])
     return matrix
-
 
 
 def geometric_stiffness_matrix(l: float, N: float, a1: float, a2: float) -> np.ndarray:

@@ -31,10 +31,14 @@ def set_force_vector(
     return system.system_force_vector
 
 
+
+
+
 def prep_matrix_forces(system: "SystemElements"):
     system.system_force_vector = system.system_force_vector = np.zeros(
         len(system._vertices) * 3
     )
+    apply_linear_moment_load(system)
     apply_perpendicular_q_load(system)
     apply_point_load(system)
     apply_moment_load(system)
@@ -56,6 +60,34 @@ def apply_point_load(system: "SystemElements"):
                 (node_id, 2, Fz),
             ],
         )
+
+def apply_linear_moment_load(system):
+    def update(element):
+        Mz=element.m_load
+        rright = Mz
+        rleft = -rright
+        element.element_primary_force_vector[1] -= rleft
+        element.element_primary_force_vector[4] -= rright
+
+        set_force_vector(
+            system,
+            [
+                (element.node_1.id, 2, rleft),
+                (element.node_2.id, 2, rright),
+            ],
+        )
+
+
+    for element_id in system.loads_dead_load:
+        element = system.element_map[element_id]
+        if element.m_load is None:
+            continue
+        update(element)
+
+
+
+
+
 
 
 def apply_perpendicular_q_load(system: "SystemElements"):

@@ -109,9 +109,9 @@ class ElementLevel:
         element.node_map[element.node_id1] = Node(
             id=element.node_id1,
             Fx=element.element_force_vector[0]
-            + element.element_primary_force_vector[0],
+               + element.element_primary_force_vector[0],
             Fz=element.element_force_vector[1]
-            + element.element_primary_force_vector[1],
+               + element.element_primary_force_vector[1],
             Ty=element.element_force_vector[2] + element.element_primary_force_vector[2]
             if not hinge1
             else 0,
@@ -124,9 +124,9 @@ class ElementLevel:
         element.node_map[element.node_id2] = Node(
             id=element.node_id2,
             Fx=element.element_force_vector[3]
-            + element.element_primary_force_vector[3],
+               + element.element_primary_force_vector[3],
             Fz=element.element_force_vector[4]
-            + element.element_primary_force_vector[4],
+               + element.element_primary_force_vector[4],
             Ty=element.element_force_vector[5] + element.element_primary_force_vector[5]
             if not hinge2
             else 0,
@@ -156,10 +156,10 @@ class ElementLevel:
     @staticmethod
     def determine_axial_force(element: "Element"):
         N_1 = (math.sin(element.angle) * element.node_1.Fz) + -(
-            math.cos(element.angle) * element.node_1.Fx
+                math.cos(element.angle) * element.node_1.Fx
         )
         N_2 = -(math.sin(element.angle) * element.node_2.Fz) + (
-            math.cos(element.angle) * element.node_2.Fx
+                math.cos(element.angle) * element.node_2.Fx
         )
 
         element.N_1 = N_1
@@ -174,11 +174,11 @@ class ElementLevel:
         m_val = element.node_1.Ty + iteration_factor * dT
         if element.all_q_load:
             q = element.all_q_load
-            if isinstance(q,float):
+            if isinstance(q, float):
                 q_part = -0.5 * -q * x ** 2 + 0.5 * -q * element.l * x
-            elif isinstance(q,list):
+            elif isinstance(q, list):
                 q_part = 0.5 * -q[0] * x * (element.l - x)
-                q_lin = ((q[1]-q[0])/6) * (((x**3)/element.l)-x*element.l)
+                q_lin = ((q[1] - q[0]) / 6) * (((x ** 3) / element.l) - x * element.l)
                 q_part += q_lin
             m_val += q_part
 
@@ -198,6 +198,8 @@ class ElementLevel:
         correction = shear_force[1] - shear_force[0]
         shear_force = np.insert(shear_force, 0, [shear_force[0] - 0.5 * correction])
         shear_force = np.insert(shear_force, con, [shear_force[-1] + 0.5 * correction])
+        if element.m_load:
+            shear_force += element.m_load
         element.shear_force = shear_force
 
     @staticmethod

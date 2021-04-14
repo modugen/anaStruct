@@ -152,7 +152,7 @@ class Element:
                 self.constitutive_matrix, self.kinematic_matrix
             )
         else:
-            phi = (12 * self.EI) / (0.8333 * self.GA * (self.l ** 2))
+            phi = (12 * self.EI) / (self.GA * (self.l ** 2))
             beta = 1 / (1 + phi)
             matrix = stiffness_matrix(
                 self.constitutive_matrix, self.kinematic_matrix)
@@ -265,7 +265,7 @@ def constitutive_matrix(
             [[EA / l, 0, 0], [0, 4 * EI / l, -2 * EI / l], [0, -2 * EI / l, 4 * EI / l]]
         )
     else:
-        phi = (12 * EI) / (0.8333 * GA * (l ** 2))
+        phi = (12 * EI) / (GA * (l ** 2))
         beta = 1 / (1 + phi)
         matrix = np.array(
             [[EA / (beta * l), 0, 0], [0, 4 * EI / l, -2 * EI / l], [0, -2 * EI / l, 4 * EI / l]]

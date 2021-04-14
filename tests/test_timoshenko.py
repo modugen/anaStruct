@@ -4,10 +4,10 @@ import numpy as np
 
 def test_timoshenko_discrete():
     system = SystemElements()
-    system.add_element(location=[[0.25, 0]], EA=1.4e8, EI=1.167e5, GA=8.75e6)
-    system.add_element(location=[[0.5, 0]], EA=1.4e8, EI=1.167e5, GA=8.75e6)
-    system.add_element(location=[[0.75, 0]], EA=1.4e8, EI=1.167e5, GA=8.75e6)
-    system.add_element(location=[[1, 0]], EA=1.4e8, EI=1.167e5, GA=8.75e6)
+    system.add_element(location=[[0.25, 0]], EA=1.4e8, EI=1.167e5, GA=0.8333 *8.75e6)
+    system.add_element(location=[[0.5, 0]], EA=1.4e8, EI=1.167e5, GA=0.8333 *8.75e6)
+    system.add_element(location=[[0.75, 0]], EA=1.4e8, EI=1.167e5, GA=0.8333 *8.75e6)
+    system.add_element(location=[[1, 0]], EA=1.4e8, EI=1.167e5, GA=0.8333 *8.75e6)
     system.q_load(element_id=1, q=5000, direction="y")
     system.q_load(element_id=2, q=5000, direction="y")
     system.q_load(element_id=3, q=5000, direction="y")
@@ -22,7 +22,7 @@ def test_timoshenko_discrete():
 
 def test_timoshenko_continuous():
     system = SystemElements()
-    system.add_element(location=[[0, 0], [1, 0]], EA=1.4e8, EI=1.167e5, GA=8.75e6)
+    system.add_element(location=[[0, 0], [1, 0]], EA=1.4e8, EI=1.167e5, GA=0.8333 *8.75e6)
     system.q_load(element_id=1, q=5000, direction="y")
 
     system.add_support_hinged(node_id=1)

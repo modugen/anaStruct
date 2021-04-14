@@ -222,7 +222,7 @@ class ElementLevel:
         """
         if element.GA is not None:
             shear_force = np.delete(element.shear_force,-1)
-            shear_contribution = 6*shear_force/(5*element.GA)
+            shear_contribution = shear_force/element.GA
         else:
             shear_contribution = 0
 

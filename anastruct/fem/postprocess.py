@@ -220,6 +220,11 @@ class ElementLevel:
             value for b. w[-1] = 0.
         c = Translate the parabola. Translate it so that w[0] = 0
         """
+        if element.GA is not None:
+            shear_force = np.delete(element.shear_force,-1)
+            shear_contribution = 6*shear_force/(5*element.GA)
+        else:
+            shear_contribution = 0
 
         if element.type == "general":
             assert element.bending_moment is not None
@@ -228,14 +233,14 @@ class ElementLevel:
 
             # Next we are going to compute w by integrating from both sides.
             # Due to numerical differences we need to take this two sided approach.
-            phi_neg1 = -integrate_array(element.bending_moment, dx) / element.EI
+            phi_neg1 = -integrate_array(element.bending_moment, dx) / element.EI + shear_contribution
             w1 = integrate_array(phi_neg1, dx)
 
             # Angle between last w and elements axis. The w array will be corrected so that this angle == 0.
             alpha1 = np.arctan(w1[-1] / element.l)
             w1 = w1 - lx * np.tan(alpha1)
 
-            phi_neg2 = -integrate_array(element.bending_moment[::-1], dx) / element.EI
+            phi_neg2 = -integrate_array(element.bending_moment[::-1], dx) / element.EI + shear_contribution
             w2 = integrate_array(phi_neg2, dx)
 
             # Angle between last w and elements axis. The w array will be corrected so that this angle == 0.

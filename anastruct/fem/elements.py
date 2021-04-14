@@ -111,7 +111,7 @@ class Element:
                     "Wrong parameters",
                     "q-loads direction is not set property. Please choose 'x', 'y', or 'element'",
                 )
-            if isinstance(self.q_load, (float,int)):
+            if isinstance(self.q_load, (float, int)):
                 q = self.q_load * q_factor + self.dead_load * cos(self.angle)
             elif isinstance(self.q_load, list):
                 q = [q_l * q_factor + self.dead_load * cos(self.angle) for q_l in self.q_load]
@@ -147,15 +147,27 @@ class Element:
         return self.element_force_vector
 
     def compile_stiffness_matrix(self):
-        self.stiffness_matrix = stiffness_matrix(
-            self.constitutive_matrix, self.kinematic_matrix
-        )
+        if self.GA is None:
+            self.stiffness_matrix = stiffness_matrix(
+                self.constitutive_matrix, self.kinematic_matrix
+            )
+        else:
+            phi = (12 * self.EI) / (0.8333 * self.GA * (self.l ** 2))
+            beta = 1 / (1 + phi)
+            matrix = stiffness_matrix(
+                self.constitutive_matrix, self.kinematic_matrix)
+            matrix[2][2] += phi*self.EI/self.l
+            matrix[5][5] += phi*self.EI/self.l
+            matrix[2][5] -= phi*self.EI/self.l
+            matrix[5][2] -= phi*self.EI/self.l
+            matrix = beta*matrix
+            self.stiffness_matrix = matrix
 
     def compile_kinematic_matrix(self, a1: float, a2: float, l: float):
 
         self.kinematic_matrix = kinematic_matrix(a1, a2, l)
 
-    def compile_constitutive_matrix(self, EA: float, EI: float,GA:float, l: float):
+    def compile_constitutive_matrix(self, EA: float, EI: float, GA: float, l: float):
         self.constitutive_matrix = constitutive_matrix(EA, EI, l, GA, self.springs)
 
     def compile_mass_matrix(self):
@@ -253,13 +265,11 @@ def constitutive_matrix(
             [[EA / l, 0, 0], [0, 4 * EI / l, -2 * EI / l], [0, -2 * EI / l, 4 * EI / l]]
         )
     else:
-        phi = (12*EI)/(0.8333*GA*l**2)
-        beta= 1/ (1+phi)
+        phi = (12 * EI) / (0.8333 * GA * (l ** 2))
+        beta = 1 / (1 + phi)
         matrix = np.array(
-            [[EA / l, 0, 0], [0, beta*(4+phi) * EI / l, beta*(-2+phi) * EI / l], [0, beta*(-2+phi) * EI / l, beta*(4+phi) * EI / l]]
+            [[EA / (beta * l), 0, 0], [0, 4 * EI / l, -2 * EI / l], [0, -2 * EI / l, 4 * EI / l]]
         )
-
-
 
     if spring is not None:
         """
@@ -300,15 +310,14 @@ def stiffness_matrix(
 
 
 def mass_matrix(linear_density: float, l: float):
-    matrix = ((linear_density * l)/420) * \
+    matrix = ((linear_density * l) / 420) * \
              np.array([[140, 0, 0, 70, 0, 0],
-                       [0, 156, 22*l, 0, 54, -13*l],
-                       [0, 22*l, 4*l**2, 0, 13*l, -3*l**2],
+                       [0, 156, 22 * l, 0, 54, -13 * l],
+                       [0, 22 * l, 4 * l ** 2, 0, 13 * l, -3 * l ** 2],
                        [70, 0, 0, 140, 0, 0],
-                       [0, 54, 13*l, 0, 156, -22*l],
-                       [0, -13*l, -3*l**2, 0, -22*l, 4*l**2]])
+                       [0, 54, 13 * l, 0, 156, -22 * l],
+                       [0, -13 * l, -3 * l ** 2, 0, -22 * l, 4 * l ** 2]])
     return matrix
-
 
 
 def geometric_stiffness_matrix(l: float, N: float, a1: float, a2: float) -> np.ndarray:

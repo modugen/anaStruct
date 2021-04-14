@@ -31,6 +31,7 @@ class Element:
             id_: int,
             EA: float,
             EI: float,
+            GA: float,
             l: float,
             angle: float,
             vertex_1: Vertex,
@@ -57,6 +58,7 @@ class Element:
         self.type = type_
         self.EA = EA
         self.EI = EI
+        self.GA = GA
         self.l = l
         self.linear_density = linear_density
         self.springs = spring
@@ -87,7 +89,7 @@ class Element:
         self.extension: Optional[np.ndarray] = None
         self.max_deflection = None
         self.nodes_plastic: List[bool] = [False, False]
-        self.compile_constitutive_matrix(self.EA, self.EI, l)
+        self.compile_constitutive_matrix(self.EA, self.EI, self.GA, l)
         self.compile_stiffness_matrix()
         self.compile_mass_matrix()
         self.section_name = section_name  # needed for element annotation
@@ -150,10 +152,11 @@ class Element:
         )
 
     def compile_kinematic_matrix(self, a1: float, a2: float, l: float):
+
         self.kinematic_matrix = kinematic_matrix(a1, a2, l)
 
-    def compile_constitutive_matrix(self, EA: float, EI: float, l: float):
-        self.constitutive_matrix = constitutive_matrix(EA, EI, l, self.springs)
+    def compile_constitutive_matrix(self, EA: float, EI: float,GA:float, l: float):
+        self.constitutive_matrix = constitutive_matrix(EA, EI, l, GA, self.springs)
 
     def compile_mass_matrix(self):
         self.mass_matrix = mass_matrix(self.linear_density, self.l)
@@ -236,7 +239,7 @@ def kinematic_matrix(a1: float, a2: float, l: float) -> np.ndarray:
 
 
 def constitutive_matrix(
-        EA: float, EI: float, l: float, spring: Optional[Dict[int, float]] = None
+        EA: float, EI: float, l: float, GA: float = None, spring: Optional[Dict[int, float]] = None
 ) -> np.ndarray:
     """
     :param EA: (float) Young's modules * Area
@@ -245,9 +248,18 @@ def constitutive_matrix(
     :param spring: (int) 1 or 2. Apply a hinge on the first of the second node.
     :return: (array)
     """
-    matrix = np.array(
-        [[EA / l, 0, 0], [0, 4 * EI / l, -2 * EI / l], [0, -2 * EI / l, 4 * EI / l]]
-    )
+    if GA is None:
+        matrix = np.array(
+            [[EA / l, 0, 0], [0, 4 * EI / l, -2 * EI / l], [0, -2 * EI / l, 4 * EI / l]]
+        )
+    else:
+        phi = (12*EI)/(0.8333*GA*l**2)
+        beta= 1/ (1+phi)
+        matrix = np.array(
+            [[EA / l, 0, 0], [0, beta*(4+phi) * EI / l, beta*(-2+phi) * EI / l], [0, beta*(-2+phi) * EI / l, beta*(4+phi) * EI / l]]
+        )
+
+
 
     if spring is not None:
         """

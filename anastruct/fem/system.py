@@ -1004,19 +1004,25 @@ class SystemElements:
                 (Fy[i] * self.orientation_cs * cos + Fx[i] * sin) * self.load_factor,
             )
 
-    def q_moment(self, element_id, m):
-        element_id, m = args_to_lists(element_id,m)
-        m = cast(Sequence[float], m)
+    def q_moment(self, element_id: Union[int, Sequence[int]], Ty: Union[float, Sequence[float]]):
+        """
+        Apply a distributed moment on an element
+
+        :param element_id: Nodes ID.
+        :param Ty: Moment(s) acting on the element(s) around the y-axis.
+        """
+        element_id, Ty = args_to_lists(element_id, Ty)
+        Ty = cast(Sequence[float], Ty)
         element_id = cast(Sequence[int], element_id)
 
-        assert len(m) == len(element_id)
+        assert len(Ty) == len(element_id)
 
         for i in range(len(element_id)):
             id_ = _negative_index_to_id(element_id[i], self.element_map.keys())
-            self.plotter.max_q = max(self.plotter.max_q, abs(m[i]))
-            self.loads_linear_moment[id_] = m[i] * self.load_factor
+            self.plotter.max_q = max(self.plotter.max_q, abs(Ty[i]))
+            self.loads_linear_moment[id_] = Ty[i] * self.load_factor
             el = self.element_map[id_]
-            el.m_load = m[i] * self.load_factor
+            el.m_load = Ty[i] * self.load_factor
 
     def moment_load(
             self, node_id: Union[int, Sequence[int]], Ty: Union[float, Sequence[float]]

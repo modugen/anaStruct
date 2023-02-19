@@ -198,8 +198,10 @@ class ElementLevel:
 
         # Due to differentiation the first and the last values must be corrected.
         correction = shear_force[1] - shear_force[0]
-        shear_force = np.insert(shear_force, 0, [shear_force[0] - 0.5 * correction])
-        shear_force = np.insert(shear_force, con, [shear_force[-1] + 0.5 * correction])
+        new_shear_force = np.zeros((con+1,), dtype=shear_force.dtype)
+        new_shear_force[0] = shear_force[0] - 0.5 * correction
+        new_shear_force[1:-1] = shear_force
+        new_shear_force[-1] = shear_force[-1] + 0.5 * correction
         if element.m_load:
             shear_force += element.m_load
         element.shear_force = shear_force

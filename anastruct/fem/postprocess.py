@@ -6,6 +6,16 @@ from anastruct.basic import integrate_array
 
 from typing import TYPE_CHECKING
 
+from numpy.core.function_base import _linspace_dispatcher, array_function_dispatch
+
+import numpy as np
+import operator
+import types
+
+from numpy.core.multiarray import add_docstring
+from numpy.core import overrides
+from numpy.core import numeric as _nx, ndim
+
 if TYPE_CHECKING:
     from anastruct.fem.system import SystemElements
     from anastruct.fem.elements import Element
@@ -155,11 +165,13 @@ class ElementLevel:
 
     @staticmethod
     def determine_axial_force(element: "Element"):
-        N_1 = (math.sin(element.angle) * element.node_1.Fz) + -(
-                math.cos(element.angle) * element.node_1.Fx
+        sin_angle = math.sin(element.angle)
+        cos_angle = math.cos(element.angle)
+        N_1 = (sin_angle * element.node_1.Fz) - (
+                cos_angle * element.node_1.Fx
         )
-        N_2 = -(math.sin(element.angle) * element.node_2.Fz) + (
-                math.cos(element.angle) * element.node_2.Fx
+        N_2 = -(sin_angle * element.node_2.Fz) + (
+                cos_angle * element.node_2.Fx
         )
 
         element.N_1 = N_1
@@ -169,7 +181,13 @@ class ElementLevel:
     def determine_bending_moment(element: "Element", con: int):
         dT = -(element.node_2.Ty + element.node_1.Ty)  # T2 - (-T1)
 
-        iteration_factor = np.linspace(0, 1, con)
+        """np.linspace seems to be slow for small N
+        https://github.com/numpy/numpy/issues/22915
+        """  # noqa
+        if con < 100:
+            iteration_factor = np.arange(con) / con
+        else:
+            iteration_factor = np.linspace(0, 1, con)
         x = iteration_factor * element.l
         m_val = element.node_1.Ty + iteration_factor * dT
         if element.all_q_load:
@@ -190,14 +208,16 @@ class ElementLevel:
         Determines the shear force by differentiating the bending moment.
         :param element: (object) of the Element class
         """
-        dV = np.diff(element.bending_moment)
+        dV = element.bending_moment[1:] - element.bending_moment[0:-1]
         dx = element.l / (con - 1)
         shear_force = dV / dx
 
         # Due to differentiation the first and the last values must be corrected.
         correction = shear_force[1] - shear_force[0]
-        shear_force = np.insert(shear_force, 0, [shear_force[0] - 0.5 * correction])
-        shear_force = np.insert(shear_force, con, [shear_force[-1] + 0.5 * correction])
+        new_shear_force = np.zeros((con+1,), dtype=shear_force.dtype)
+        new_shear_force[0] = shear_force[0] - 0.5 * correction
+        new_shear_force[1:-1] = shear_force
+        new_shear_force[-1] = shear_force[-1] + 0.5 * correction
         if element.m_load:
             shear_force += element.m_load
         element.shear_force = shear_force
@@ -229,7 +249,13 @@ class ElementLevel:
         if element.type == "general":
             assert element.bending_moment is not None
             dx = element.l / (len(element.bending_moment) - 1)
-            lx = np.linspace(0, element.l, con)
+            """np.linspace seems to be slow for small N
+            https://github.com/numpy/numpy/issues/22915
+            """ # noqa
+            if con < 100:
+                lx = np.arange(con) * dx
+            else:
+                lx = np.linspace(np.array(0), np.array(element.l), con)
 
             # Next we are going to compute w by integrating from both sides.
             # Due to numerical differences we need to take this two sided approach.
@@ -256,3 +282,65 @@ class ElementLevel:
         u = 0.5 * (element.N_1 + element.N_2) / element.EA * element.l
         du = u / con
         element.extension = du * (np.arange(con) + 1)
+
+
+
+
+
+
+@array_function_dispatch(_linspace_dispatcher)
+def fast_linspace(start, stop, num=50, endpoint=True, retstep=False, dtype=None,
+                  axis=0):
+    num = operator.index(num)
+    if num < 0:
+        raise ValueError("Number of samples, %s, must be non-negative." % num)
+    div = (num - 1) if endpoint else num
+
+    # Convert float/complex array scalars to float, gh-3504
+    # and make sure one can use variables that have an __array_interface__, gh-6634
+    # start = asanyarray(start) * 1.0
+    # stop  = asanyarray(stop)  * 1.0
+
+    dt = np.result_type(start, stop, float(num))
+    if dtype is None:
+        dtype = dt
+
+    delta = stop - start
+    y = _nx.arange(0, num, dtype=dt).reshape((-1,) + (1,) * ndim(delta))
+    # In-place multiplication y *= delta/div is faster, but prevents the multiplicant
+    # from overriding what class is produced, and thus prevents, e.g. use of Quantities,
+    # see gh-7142. Hence, we multiply in place only for standard scalar types.
+    _mult_inplace = _nx.isscalar(delta)
+    if div > 0:
+        step = delta / div
+        if _nx.any(step == 0):
+            # Special handling for denormal numbers, gh-5437
+            y /= div
+            if _mult_inplace:
+                y *= delta
+            else:
+                y = y * delta
+        else:
+            if _mult_inplace:
+                y *= step
+            else:
+                y = y * step
+    else:
+        # sequences with 0 items or 1 item with endpoint=True (i.e. div <= 0)
+        # have an undefined step
+        step = np.NaN
+        # Multiply with delta to allow possible override of output class.
+        y = y * delta
+
+    y += start
+
+    if endpoint and num > 1:
+        y[-1] = stop
+
+    if axis != 0:
+        y = _nx.moveaxis(y, 0, axis)
+
+    if retstep:
+        return y.astype(dtype, copy=False), step
+    else:
+        return y.astype(dtype, copy=False)

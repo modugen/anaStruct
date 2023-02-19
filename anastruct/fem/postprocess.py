@@ -155,11 +155,13 @@ class ElementLevel:
 
     @staticmethod
     def determine_axial_force(element: "Element"):
-        N_1 = (math.sin(element.angle) * element.node_1.Fz) + -(
-                math.cos(element.angle) * element.node_1.Fx
+        sin_angle = math.sin(element.angle)
+        cos_angle = math.cos(element.angle)
+        N_1 = (sin_angle * element.node_1.Fz) - (
+                cos_angle * element.node_1.Fx
         )
-        N_2 = -(math.sin(element.angle) * element.node_2.Fz) + (
-                math.cos(element.angle) * element.node_2.Fx
+        N_2 = -(sin_angle * element.node_2.Fz) + (
+                cos_angle * element.node_2.Fx
         )
 
         element.N_1 = N_1

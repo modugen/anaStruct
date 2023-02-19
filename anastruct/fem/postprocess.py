@@ -219,8 +219,8 @@ class ElementLevel:
         new_shear_force[1:-1] = shear_force
         new_shear_force[-1] = shear_force[-1] + 0.5 * correction
         if element.m_load:
-            shear_force += element.m_load
-        element.shear_force = shear_force
+            new_shear_force += element.m_load
+        element.shear_force = new_shear_force
 
     @staticmethod
     def determine_displacements(element: "Element", con: int):

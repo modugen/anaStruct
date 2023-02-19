@@ -181,7 +181,13 @@ class ElementLevel:
     def determine_bending_moment(element: "Element", con: int):
         dT = -(element.node_2.Ty + element.node_1.Ty)  # T2 - (-T1)
 
-        iteration_factor = np.linspace(0, 1, con)
+        """np.linspace seems to be slow for small N
+        https://github.com/numpy/numpy/issues/22915
+        """  # noqa
+        if con < 100:
+            iteration_factor = np.arange(con) / con
+        else:
+            iteration_factor = np.linspace(0, 1, con)
         x = iteration_factor * element.l
         m_val = element.node_1.Ty + iteration_factor * dT
         if element.all_q_load:

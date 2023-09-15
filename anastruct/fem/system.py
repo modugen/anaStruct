@@ -616,16 +616,19 @@ class SystemElements:
         naked = kwargs.get("naked", False)
 
         if not naked:
-            if not self.validate():
-                if all(
-                        ["general" in element.type for element in self.element_map.values()]
-                ):
-                    raise FEMException(
-                        "StabilityError",
-                        "The eigenvalues of the stiffness matrix are non zero, "
-                        "which indicates a instable structure. "
-                        "Check your support conditions",
-                    )
+            # check if skip_validation is enabled
+            skip_validation = kwargs.get("skip_validation", False)
+            if not skip_validation:
+                if not self.validate():
+                    if all(
+                            ["general" in element.type for element in self.element_map.values()]
+                    ):
+                        raise FEMException(
+                            "StabilityError",
+                            "The eigenvalues of the stiffness matrix are non zero, "
+                            "which indicates a instable structure. "
+                            "Check your support conditions",
+                        )
 
         # (Re)set force vectors
         for el in self.element_map.values():

@@ -14,19 +14,20 @@ class Vertex:
         self,
         x: Union[Vertex, Sequence[int], Sequence[float], int, float],
         y: Union[int, float, None] = None,
+        dtype=np.float64
     ):
         """
         :param x: Can be any of int, float, coordinate list, or other vertex.
         :param y: (int, flt)
         """
         if isinstance(x, (Sequence)):
-            self.coordinates = np.array([x[0], x[1]], dtype=np.float32)
+            self.coordinates = np.array([x[0], x[1]], dtype=dtype)
         elif isinstance(x, np.ndarray):
-            self.coordinates = np.array(x, dtype=np.float32)
+            self.coordinates = np.array(x, dtype=dtype)
         elif isinstance(x, Vertex):
-            self.coordinates = np.array(x.coordinates, dtype=np.float32)
+            self.coordinates = np.array(x.coordinates, dtype=dtype)
         else:
-            self.coordinates = np.array([x, y], dtype=np.float32)
+            self.coordinates = np.array([x, y], dtype=dtype)
 
     @property
     def x(self) -> float:

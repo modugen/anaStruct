@@ -155,11 +155,13 @@ class ElementLevel:
 
     @staticmethod
     def determine_axial_force(element: "Element"):
-        N_1 = (math.sin(element.angle) * element.node_1.Fz) + -(
-                math.cos(element.angle) * element.node_1.Fx
+        sin_angle = math.sin(element.angle)
+        cos_angle = math.cos(element.angle)
+        N_1 = (sin_angle * element.node_1.Fz) - (
+                cos_angle * element.node_1.Fx
         )
-        N_2 = -(math.sin(element.angle) * element.node_2.Fz) + (
-                math.cos(element.angle) * element.node_2.Fx
+        N_2 = -(sin_angle * element.node_2.Fz) + (
+                cos_angle * element.node_2.Fx
         )
 
         element.N_1 = N_1
@@ -190,17 +192,19 @@ class ElementLevel:
         Determines the shear force by differentiating the bending moment.
         :param element: (object) of the Element class
         """
-        dV = np.diff(element.bending_moment)
+        dV = element.bending_moment[1:] - element.bending_moment[0:-1]
         dx = element.l / (con - 1)
         shear_force = dV / dx
 
         # Due to differentiation the first and the last values must be corrected.
         correction = shear_force[1] - shear_force[0]
-        shear_force = np.insert(shear_force, 0, [shear_force[0] - 0.5 * correction])
-        shear_force = np.insert(shear_force, con, [shear_force[-1] + 0.5 * correction])
+        new_shear_force = np.zeros((con+1,), dtype=shear_force.dtype)
+        new_shear_force[0] = shear_force[0] - 0.5 * correction
+        new_shear_force[1:-1] = shear_force
+        new_shear_force[-1] = shear_force[-1] + 0.5 * correction
         if element.m_load:
-            shear_force += element.m_load
-        element.shear_force = shear_force
+            new_shear_force += element.m_load
+        element.shear_force = new_shear_force
 
     @staticmethod
     def determine_displacements(element: "Element", con: int):

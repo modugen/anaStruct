@@ -192,7 +192,7 @@ class ElementLevel:
         Determines the shear force by differentiating the bending moment.
         :param element: (object) of the Element class
         """
-        dV = np.diff(element.bending_moment)
+        dV = element.bending_moment[1:] - element.bending_moment[0:-1]
         dx = element.l / (con - 1)
         shear_force = dV / dx
 

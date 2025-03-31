@@ -2,7 +2,7 @@ import copy
 import math
 
 import numpy as np
-from anastruct.fem.fast_np import fast_linspace
+from anastruct.fem.fast_np import linspace_performance_wrapper
 from anastruct.fem.node import Node
 from anastruct.basic import integrate_array
 
@@ -178,10 +178,7 @@ class ElementLevel:
         """np.linspace seems to be slow for small N
         https://github.com/numpy/numpy/issues/22915
         """  # noqa
-        if con < 100:
-            iteration_factor = fast_linspace(0, 1, con)
-        else:
-            iteration_factor = np.linspace(0, 1, con)
+        iteration_factor = linspace_performance_wrapper(0, 1, con)
         x = iteration_factor * element.l
         m_val = element.node_1.Ty + iteration_factor * dT
         if element.all_q_load:
@@ -246,10 +243,7 @@ class ElementLevel:
             """np.linspace seems to be slow for small N
             https://github.com/numpy/numpy/issues/22915
             """ # noqa
-            if con < 100:
-                lx = fast_linspace(np.array(0), np.array(element.l), con)
-            else:
-                lx = np.linspace(np.array(0), np.array(element.l), con)
+            lx = linspace_performance_wrapper(np.array(0), np.array(element.l), con)
 
             # Next we are going to compute w by integrating from both sides.
             # Due to numerical differences we need to take this two sided approach.

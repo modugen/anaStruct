@@ -1,4 +1,5 @@
 import math, re, collections, copy
+from anastruct.fem.fast_np import linspace_performance_wrapper
 import numpy as np
 import scipy as sp
 from anastruct.basic import FEMException, args_to_lists
@@ -452,11 +453,11 @@ class SystemElements:
             )
         elif n:
             var_n = n
-            lengths = np.linspace(start=0, stop=length, num=var_n + 1)
+            lengths = linspace_performance_wrapper(start=0, stop=length, num=var_n + 1)
         else:
             assert dl is not None
             var_n = int(np.ceil(length / dl) - 1)
-            lengths = np.linspace(start=0, stop=var_n * dl, num=var_n + 1)
+            lengths = linspace_performance_wrapper(start=0, stop=var_n * dl, num=var_n + 1)
             lengths = np.append(lengths, length)
 
         point = point_1 + direction * lengths[1]

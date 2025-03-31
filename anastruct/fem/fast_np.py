@@ -18,6 +18,10 @@ from numpy.core import overrides
 
 from numpy.core import numeric as _nx, ndim
 
+
+# https://github.com/numpy/numpy/issues/22915
+N_MAX_FAST_LINSPACE = 10001
+
 @array_function_dispatch(_linspace_dispatcher)
 def fast_linspace(start, stop, num=50, endpoint=True, retstep=False, dtype=None,
                   axis=0):
@@ -74,3 +78,10 @@ def fast_linspace(start, stop, num=50, endpoint=True, retstep=False, dtype=None,
         return y.astype(dtype, copy=False), step
     else:
         return y.astype(dtype, copy=False)
+
+
+def linspace_performance_wrapper(start, stop, num=50, *args, **kwargs):
+    if num < N_MAX_FAST_LINSPACE:
+        return fast_linspace(start, stop, num, *args, **kwargs)
+    else:
+        return np.linspace(start, stop, num, *args, **kwargs)

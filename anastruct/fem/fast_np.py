@@ -5,6 +5,17 @@ from numpy.core import numeric as _nx
 import numpy as np
 import types
 
+from typing import TYPE_CHECKING
+
+from numpy.core.function_base import _linspace_dispatcher, array_function_dispatch
+
+import numpy as np
+import operator
+import types
+
+from numpy.core.multiarray import add_docstring
+from numpy.core import overrides
+
 from numpy.core import numeric as _nx, ndim
 
 @array_function_dispatch(_linspace_dispatcher)

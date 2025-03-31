@@ -1,6 +1,7 @@
 import copy
 import math
 
+import numpy as np
 from anastruct.fem.fast_np import fast_linspace
 from anastruct.fem.node import Node
 from anastruct.basic import integrate_array

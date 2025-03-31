@@ -185,7 +185,7 @@ class ElementLevel:
         https://github.com/numpy/numpy/issues/22915
         """  # noqa
         if con < 100:
-            iteration_factor = np.arange(con) / con
+            iteration_factor = fast_linspace(0, 1, con)
         else:
             iteration_factor = np.linspace(0, 1, con)
         x = iteration_factor * element.l
@@ -253,7 +253,7 @@ class ElementLevel:
             https://github.com/numpy/numpy/issues/22915
             """ # noqa
             if con < 100:
-                lx = np.arange(con) * dx
+                lx = fast_linspace(np.array(0), np.array(element.l), con)
             else:
                 lx = np.linspace(np.array(0), np.array(element.l), con)
 

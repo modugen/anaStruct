@@ -334,13 +334,24 @@ class SystemElements:
         if linear_density is None:
             linear_density = g/9.8
 
+        # this is just the distance between the points
+        # but we can avoid the costly square root computation
+        # if we know that the distance is only in 1 cartesian direction
+        # which should be the case in most scenarios
+        if point_1.x == point_2.x:
+            l = float(np.abs(point_2.y - point_1.y))
+        elif point_1.y == point_2.y:
+            l = float(np.abs(point_2.x - point_1.x))
+        else:
+            l = (point_2 - point_1).modulus()
+
         # add element
         element = Element(
             id_=self.count,
             EA=EA,
             EI=EI,
             GA=GA,
-            l=(point_2 - point_1).modulus(),
+            l=l,
             angle=angle,
             vertex_1=point_1,
             vertex_2=point_2,
